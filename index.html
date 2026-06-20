@@ -327,6 +327,41 @@
             iconFixed2.dispatchEvent(clickEvent);
         }, 1500);
     </script>
+    <script src="model_data.js"></script>
+    <script>
+    const origLDRLoad = THREE.LDRLoader.prototype.load;
+    THREE.LDRLoader.prototype.load = function(id) {
+        const urls = this.idToUrl(id);
+        const lcMap = {};
+        for (const key of Object.keys(EMBEDDED_LDR_DATA)) {
+            lcMap[key.toLowerCase()] = key;
+        }
+        for (const url of urls) {
+            const lcUrl = url.toLowerCase();
+            if (lcMap[lcUrl]) {
+                const data = EMBEDDED_LDR_DATA[lcMap[lcUrl]];
+                this.partTypes[id] = true;
+                this.unloadedFiles++;
+                this.parse(data, id);
+                this.unloadedFiles--;
+                this.reportProgress(id);
+                return;
+            }
+            for (const lcKey of Object.keys(lcMap)) {
+                if (lcUrl.endsWith("/" + lcKey)) {
+                    const data = EMBEDDED_LDR_DATA[lcMap[lcKey]];
+                    this.partTypes[id] = true;
+                    this.unloadedFiles++;
+                    this.parse(data, id);
+                    this.unloadedFiles--;
+                    this.reportProgress(id);
+                    return;
+                }
+            }
+        }
+        return origLDRLoad.call(this, id);
+    };
+    </script>
 </body>
 
 </html>
